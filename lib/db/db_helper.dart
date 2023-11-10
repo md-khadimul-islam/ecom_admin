@@ -7,6 +7,10 @@ class DbHelper {
   static const collectionAdmin = 'Admins';
   static const collectionCategory = 'Categories';
   static const collectionProduct = 'Products';
+  static const String collectionUsers = 'Users';
+  static const String collectionCart = 'MyCart';
+  static const String collectionRating = 'Ratings';
+  static const String collectionOrder = 'Orders';
 
   static Future<bool> isAdmin (String uid) async {
     final snapshot = await _db.collection(collectionAdmin).doc(uid).get();
@@ -32,6 +36,14 @@ class DbHelper {
 
   static Stream<QuerySnapshot<Map<String, dynamic>>> getAllProducts () =>
       _db.collection(collectionProduct)
+          .snapshots();
+
+  static Stream<QuerySnapshot<Map<String, dynamic>>> getAllOrders () =>
+      _db.collection(collectionOrder)
+          .snapshots();
+
+  static Stream<QuerySnapshot<Map<String, dynamic>>> getAllUser () =>
+      _db.collection(collectionUsers)
           .snapshots();
 
   static Future<void> updateProductField(String id, Map<String, dynamic> map) {
