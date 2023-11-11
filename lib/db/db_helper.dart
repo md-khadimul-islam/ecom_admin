@@ -49,4 +49,8 @@ class DbHelper {
   static Future<void> updateProductField(String id, Map<String, dynamic> map) {
     return _db.collection(collectionProduct).doc(id).update(map);
   }
+
+  static Future<void> updateOrderStatus(String oid, String value) {
+    return _db.collection(collectionOrder).doc(oid).update({'orderStatus' : value});
+  }
 }
