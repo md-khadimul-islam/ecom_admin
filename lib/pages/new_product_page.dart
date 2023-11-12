@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ecom_admin/models/category_model.dart';
 import 'package:ecom_admin/models/product_model.dart';
 import 'package:ecom_admin/providers/product_provider.dart';
@@ -26,6 +28,14 @@ class _NewProductPageState extends State<NewProductPage> {
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
   final _descriptionController = TextEditingController();
+  bool isConnected = true;
+  late StreamSubscription<ConnectivityResult> subscription;
+
+  @override
+  void initState() {
+    _checkConnection();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +46,7 @@ class _NewProductPageState extends State<NewProductPage> {
         title: const Text('New Product'),
         actions: [
           IconButton(
-            onPressed: _saveProduct,
+            onPressed: isConnected ? _saveProduct : null,
             icon: const Icon(Icons.save_outlined),
           ),
         ],
@@ -46,6 +56,7 @@ class _NewProductPageState extends State<NewProductPage> {
         child: ListView(
           padding: const EdgeInsets.all(10.0),
           children: [
+            if(!isConnected)_buildConnectivityAlertSection(),
             _buildImageSection(),
             _buildCategorySection(),
             _buildTextFieldSection(),
@@ -152,6 +163,7 @@ class _NewProductPageState extends State<NewProductPage> {
     _priceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
+    subscription.cancel();
     super.dispose();
   }
 
@@ -234,7 +246,9 @@ class _NewProductPageState extends State<NewProductPage> {
       return;
     }
     if (_formKey.currentState!.validate()) {
-      final imageUrl = await Provider.of<ProductProvider>(context, listen: false).uploadImage(localImagePath!);
+      final imageUrl =
+          await Provider.of<ProductProvider>(context, listen: false)
+              .uploadImage(localImagePath!);
       final productModel = ProductModel(
         name: _nameController.text,
         category: categoryModel!,
@@ -244,13 +258,13 @@ class _NewProductPageState extends State<NewProductPage> {
       );
 
       EasyLoading.show(status: 'Please wait');
-      Provider.of<ProductProvider>(context, listen: false).addProduct(productModel)
-      .then((value) {
+      Provider.of<ProductProvider>(context, listen: false)
+          .addProduct(productModel)
+          .then((value) {
         EasyLoading.dismiss();
         showMsg(context, 'Saved');
         _resetFields();
-      })
-      .catchError((error) {
+      }).catchError((error) {
         EasyLoading.dismiss();
         showMsg(context, 'Could not save');
       });
@@ -267,4 +281,38 @@ class _NewProductPageState extends State<NewProductPage> {
       _stockController.clear();
     });
   }
+
+  Widget _buildConnectivityAlertSection() {
+    return Container(
+      alignment: Alignment.center,
+      height: 60,
+      width: double.infinity,
+      color: Colors.red,
+      child: const Text(
+        'No internet connection',
+        style: TextStyle(fontSize: 20, color: Colors.white),
+      ),
+    );
+  }
+
+  void _checkConnection() async {
+    final result = await Connectivity().checkConnectivity();
+    _checkConnectionResult(result);
+    Connectivity().onConnectivityChanged.listen((result) {
+      _checkConnectionResult(result);
+    });
+  }
+
+  void _checkConnectionResult(ConnectivityResult result) {
+    if(result  == ConnectivityResult.mobile || result == ConnectivityResult.wifi) {
+      setState(() {
+        isConnected = true;
+      });
+    } else {
+      setState(() {
+        isConnected = false;
+      });
+    }
+  }
+
 }
